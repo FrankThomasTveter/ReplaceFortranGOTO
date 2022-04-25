@@ -39,6 +39,7 @@ public class FortranProcessor {
     //
     static public void standardise(RegexNode regex) {
 	preProcessIf(regex);
+	regex.dumpToFile("debug.txt");
 	preProcessLoops(regex);
 	postProcessContinue(regex);
 	postProcessIfExec(regex);
@@ -1683,8 +1684,8 @@ public class FortranProcessor {
 	boolean bdone=false;
 	while (! bdone) {
 	    bdone=(cNode == statementsNode);
-	    cNode.setAttribute("targetName",new String(name));
-	    cNode.setAttribute("controlCount",new Integer(1));
+	    cNode.setAttribute("targetName",String.valueOf(name));
+	    cNode.setAttribute("controlCount",Integer.valueOf(1));
 	    cNode=cNode.getParent();
 	}
 	cNode=controlNode;

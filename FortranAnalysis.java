@@ -31,7 +31,7 @@ public class FortranAnalysis {
     static final int noChild=RegexNode.noSubLevels; 
     static final int allChild=RegexNode.allSubLevels; 
     //
-    static boolean debug=false;
+    static boolean debug = false;
     static boolean first = true;
     static Long tstart = time();
     //
@@ -173,6 +173,7 @@ public class FortranAnalysis {
 	RegexNode.define("<Indentation>");
 	RegexNode.define("<Anchor>");
 	RegexNode.define("<Command>");
+	RegexNode.define("<Garbage>");
 
 	//RegexNode.define("<Control>");
 	//RegexNode.define("<Label>");
@@ -371,7 +372,7 @@ public class FortranAnalysis {
 	regex.ignoreAll("string");
 	regex.ignoreAll("comment");
 
-	regex.hideAll( "_call",         "(?m)(?i)^(< ><d>< >)call< >(\\w+)([<Brackets>]?)< >[\\n<CR>]",      "\n",node); // hide call statements
+	regex.hideAll( "_call",         "(?m)(?i)^(< ><d>< >)call< >(\\w+)< >([<Brackets>]?)< >[\\n<CR>]",      "\n",node); // hide call statements
 	regex.hideNodeGroup("indentation", "<Anchor>", 1,     node,"_call");
 	regex.hideNodeGroup("name",        "<Name>",    2,    node,"_call");
 	regex.hideNodeGroup("(arguments)", "<Anchor>",   3,   node,"_call");	
@@ -448,7 +449,7 @@ public class FortranAnalysis {
 	regex.setLabelAll("<Contains>",  "contains");
 	regex.setLabelAll("<End>",       "end");
 
-	regex.hideTheRestAll("rest1","<Processed>",node);    // hide the rest
+	regex.hideTheRestAll("rest","<Garbage>",node);    // hide the rest
 
 	//regex.dumpToFile("jnkB.tree");
 
@@ -473,7 +474,7 @@ public class FortranAnalysis {
 	if (debug) System.out.format("%s HideStructure Writing to file .\n",time(tstart));
 	//regex.dumpToFile("jnkC.tree");
 
-	regex.unhideAll("rest1");
+	regex.unhideAll("rest");
 
 	//regex.setLabelAll("<Anchor>",node,"Block");
 	//regex.setLabelAll("<Anchor>",node,"Program");
@@ -538,9 +539,12 @@ public class FortranAnalysis {
 	regex.setLabelAll("<Do>",     "dowhile");
 	regex.setLabelAll("<Enddo>",  "enddo");
 
-	regex.hideTheRestAll("rest2","<Processed>","Statements"); // hide the rest
+	if (regex.hideTheRestAll("garbage","<Processed>","Statements")) {
+	    RegexNode garbage=regex.getFirstNode("Statements","garbage");
+	    System.out.format("*** Found garbage:\n%s\n",garbage.getText("garbage"));
+	}; // hide the rest
 
-	//regex.dumpToFile("debugX1_%d.tree");
+	// regex.dumpToFile("debugXX_%d.tree");
 
 	// match block start and end
 	while(regex.hideAll( "IfBlock", "(?m)(?i)<If>[^<If><Endif><Do><Enddo>]*<Endif>","<Processed>","Statements")||
@@ -552,7 +556,7 @@ public class FortranAnalysis {
 
 	regex.unignoreAll();         // first un-ignore everything
 
-	regex.unhideAll("rest2");
+	//regex.unhideAll("garbage");
     }
     static private void hidePrimitives(RegexNode regex, String... node) {
 

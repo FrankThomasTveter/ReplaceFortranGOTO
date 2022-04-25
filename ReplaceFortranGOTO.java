@@ -103,7 +103,7 @@ public class ReplaceFortranGOTO {
 	    nodeTree.unignoreAll();
 	    nodeTree.unhideAll();
 
-	    nodeTree.writeToFile( "x" + file );
+	    nodeTree.writeToFile( file + ".output" );
 
 	    System.out.format("ReplaceFortranGOTO printing done.\n");
 	}
