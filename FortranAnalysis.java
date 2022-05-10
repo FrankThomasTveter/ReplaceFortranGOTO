@@ -196,7 +196,7 @@ public class FortranAnalysis {
 
 	 // hide brackets and contents
 	// regex.ignoreAll(node,"*");  // everything so far stays hidden
-	while(regex.hideAll( "_Brackets", "(?m)(?i)\\(([^\\(\\)<Content>]*)\\)", "<Brackets>",node)) {
+	while(regex.hideAny( "_Brackets", "(?m)(?i)\\(([^\\(\\)<Content>]*)\\)", "<Brackets>",node)) {
 	    regex.hideNodeGroup("content", "<Content>", 1, node,"_Brackets");
 	    regex.setNodeNameAll("Brackets",node,"_Brackets");
 	};
@@ -307,7 +307,7 @@ public class FortranAnalysis {
 	regex.hideNodeGroup("indentation", "<Anchor>", 1,   node,"data");
 	regex.hideNodeGroup("list",  "<Anchor>",     2,  node,"data");
 
-	while (regex.hideAll( "item",     "(?m)(?i)< >([a-zA-Z][^ \\t\\n\\/]*)< >(\\/)< >(<#/>)< >(\\/*)", "<Declaration>",node,"data","list")) {  // hide data statements
+	while (regex.hideAny( "item",     "(?m)(?i)< >([a-zA-Z][^ \\t\\n\\/]*)< >(\\/)< >(<#/>)< >(\\/*)", "<Declaration>",node,"data","list")) {  // hide data statements
 	    regex.hideNodeGroup("references",  "<Pointer>",           1,   node,"data","list","item");
 	    regex.hideNodeGroup("delimiter",  "<Anchor>",              2,  node,"data","list","item");
 	    regex.hideNodeGroup("expressions","<Anchor>",           3, node,"data","list","item");
@@ -453,13 +453,13 @@ public class FortranAnalysis {
 
 	//regex.dumpToFile("jnkB.tree");
 
-	while(regex.hideAll( "Block",     "(?m)(?i)<Block>([^<Program><Subroutine><Function><End>]*)<End>","<Processed>",node)||
-	      regex.hideAll( "Program",   "(?m)(?i)<Program>([^<Program><Subroutine><Function><End><Contains>]*)()<End>","<Processed>",node)||
-	      regex.hideAll( "Program",   "(?m)(?i)<Program>([^<Program><Subroutine><Function><End><Contains>]*)(<Contains>[<CR><Processed>]*)<End>","<Processed>",node)||
-	      regex.hideAll( "Subroutine","(?m)(?i)<Subroutine>([^<Program><Subroutine><Function><End><Contains>]*)()<End>","<Processed>",node)||
-	      regex.hideAll( "Subroutine","(?m)(?i)<Subroutine>([^<Program><Subroutine><Function><End><Contains>]*)(<Contains>[<CR><Processed>]*)<End>","<Processed>",node)||
-	      regex.hideAll( "Function",  "(?m)(?i)<Function>([^<Program><Subroutine><Function><End><Contains>]*)()<End>","<Processed>",node) ||
-	      regex.hideAll( "Function",  "(?m)(?i)<Function>([^<Program><aSubroutine><Function><End><Contains>]*)(<Contains>[<CR><Processed>]*)<End>","<Processed>",node)
+	while(regex.hideAny( "Block",     "(?m)(?i)<Block>([^<Program><Subroutine><Function><End>]*)<End>","<Processed>",node)||
+	      regex.hideAny( "Program",   "(?m)(?i)<Program>([^<Program><Subroutine><Function><End><Contains>]*)()<End>","<Processed>",node)||
+	      regex.hideAny( "Program",   "(?m)(?i)<Program>([^<Program><Subroutine><Function><End><Contains>]*)(<Contains>[<CR><Processed>]*)<End>","<Processed>",node)||
+	      regex.hideAny( "Subroutine","(?m)(?i)<Subroutine>([^<Program><Subroutine><Function><End><Contains>]*)()<End>","<Processed>",node)||
+	      regex.hideAny( "Subroutine","(?m)(?i)<Subroutine>([^<Program><Subroutine><Function><End><Contains>]*)(<Contains>[<CR><Processed>]*)<End>","<Processed>",node)||
+	      regex.hideAny( "Function",  "(?m)(?i)<Function>([^<Program><Subroutine><Function><End><Contains>]*)()<End>","<Processed>",node) ||
+	      regex.hideAny( "Function",  "(?m)(?i)<Function>([^<Program><aSubroutine><Function><End><Contains>]*)(<Contains>[<CR><Processed>]*)<End>","<Processed>",node)
 	      ) {
 	    if (debug) System.out.format("%s HideStructure inside iteration .\n",time(tstart));
 	};          // hide procedural blocks 
@@ -539,16 +539,16 @@ public class FortranAnalysis {
 	regex.setLabelAll("<Do>",     "dowhile");
 	regex.setLabelAll("<Enddo>",  "enddo");
 
-	if (regex.hideTheRestAll("garbage","<Processed>","Statements")) {
+	if (regex.hideTheRestAny("garbage","<Processed>","Statements")) {
 	    RegexNode garbage=regex.getFirstNode("Statements","garbage");
-	    System.out.format("*** Found garbage:\n%s\n",garbage.getText("garbage"));
+	    System.out.format("*** Found garbage:%s %s\n%s",garbage.getIdentification(),garbage.getNodeName(),garbage.getTextAll());
 	}; // hide the rest
 
-	// regex.dumpToFile("debugXX_%d.tree");
+	//regex.dumpToFile("debugXX_%d.tree");
 
 	// match block start and end
-	while(regex.hideAll( "IfBlock", "(?m)(?i)<If>[^<If><Endif><Do><Enddo>]*<Endif>","<Processed>","Statements")||
-	      regex.hideAll( "DoLoop",  "(?m)(?i)<Do>[^<If><Endif><Do><Enddo>]*<Enddo>","<Processed>","Statements")) {
+	while(regex.hideAny( "IfBlock", "(?m)(?i)<If>[^<If><Endif><Do><Enddo>]*<Endif>","<Processed>","Statements")||
+	      regex.hideAny( "DoLoop",  "(?m)(?i)<Do>[^<If><Endif><Do><Enddo>]*<Enddo>","<Processed>","Statements")) {
 	};
 
 	regex.hideAll( "IfStatements", "(?m)(?i)[^<If><Elseif><Else><Endif><Do><Enddo>]+","<Processed>","IfBlock");
@@ -615,8 +615,8 @@ public class FortranAnalysis {
 	regex.hideAll( "number", "(?m)(?i)(\\d+\\.\\d*[dDeE][+-]*\\d+)",  "<Anchor>","expression","...");
 	regex.ignoreAll("number");
 	// hide arithmetic operations (recursively)
-	while(regex.hideAll( "arithmetic", "(?m)(?i)(<atom>+)< >(\\*\\*)< >(<atom>+)",  "<Anchor>","expression","...") ||
-	      regex.hideAll( "arithmetic", "(?m)(?i)(<atom>+)< >([\\*\\+\\-\\/])< >(<atom>+)",  "<Anchor>","expression","...")) {
+	while(regex.hideAny( "arithmetic", "(?m)(?i)(<atom>+)< >(\\*\\*)< >(<atom>+)",  "<Anchor>","expression","...") ||
+	      regex.hideAny( "arithmetic", "(?m)(?i)(<atom>+)< >([\\*\\+\\-\\/])< >(<atom>+)",  "<Anchor>","expression","...")) {
 	    if (debug) System.out.format("%s inside arithmetic iteration .\n",time(tstart));
 	    regex.hideNodeGroup("argument", "<Argument>", 1, node,"...","arithmetic");
 	    regex.hideNodeGroup("type", "<Argument>", 2, node,"...","arithmetic");

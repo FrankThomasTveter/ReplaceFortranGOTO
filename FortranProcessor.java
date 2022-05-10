@@ -432,10 +432,10 @@ public class FortranProcessor {
 	    return false; // nothing to do
 	}
 	statementsNode.markLabelAll(controlList,"¤","#",-2,"$","Statements","...","control");
-	statementsNode.markLabelAll(targetList,"@","#",-2,"$","Statements","...");
-	while (statementsNode.seek("(?m)(?i)(¤<Do>#)((?!¤<Do>#).*)(@-#)")) {
+	statementsNode.markLabelAll(targetList,"@","~",-2,"$","Statements","...");
+	while (statementsNode.seek("(?m)(?i)(¤<Do>#)((?!¤<Do>#).*)(@-~)")) {
 	    if (debug) System.out.format("   %s (c=%d l=%d): %s\n",name,controlList.size(),targetList.size(),statementsNode.replaceAnchors(statementsNode.getText()));
-	    System.out.format("Found \"Labelled do-loop\" with label: %s.\n",name);
+	    System.out.format("Found Labelled do-loop with label: %s.\n",name);
 	    RegexNode startTempNode=statementsNode.hide("startNode","do",1);
 	    RegexNode bodyTempNode=statementsNode.hide("bodyNode","body",2);
 	    RegexNode endTempNode=statementsNode.hide("endNode","enddo",3);
@@ -470,7 +470,7 @@ public class FortranProcessor {
 		    bodyTempNode.setAttributeAll("label",lname,"$","bodyNode","preCode","newCycle");
 		    bodyTempNode.unhideAll("preCode");
 		} else { // after a goto, we must skip to last end statement...
-		    while (bodyTempNode.hideAll( "preCode", "(?m)(?i)(¤-#)([^¤#]*)$","-","bodyNode")) {
+		    while (bodyTempNode.hideAny( "preCode", "(?m)(?i)(¤-#)([^¤#]*)$","-","bodyNode")) {
 			if (debug) statementsNode.dumpToFile("   dumpX15_%d.tree");
 			bodyTempNode.hideNodeGroup("newAssignment","-",1,"preCode");
 			bodyTempNode.hideNodeGroup("newSkip","-",2,"preCode");
@@ -555,14 +555,13 @@ public class FortranProcessor {
 				       ArrayList<String> newLabelsList,
 				       ArrayList<String> obsoleteVariablesList) {
 	if (debug) System.out.format("processGoto Entering with %s\n",name);
-
 	boolean changed=false;
 	HashMap<String,ArrayList<RegexNode>> oldControlMap = statementsNode.makeMap("oldControl");
 	HashMap<String,ArrayList<RegexNode>> controlMap    = statementsNode.makeMap("control");
 	HashMap<String,ArrayList<RegexNode>> targetMap     = statementsNode.makeMap("target");
 	ArrayList<RegexNode> oldControlList = oldControlMap.get(name); // control-labels
 	ArrayList<RegexNode> controlList    = controlMap.get(name); // control-labels
-	ArrayList<RegexNode> targetList     = targetMap.get(name);     // destination-labels
+	ArrayList<RegexNode> targetList     = targetMap.get(name);  // destination-labels
 	if (debug) statementsNode.dumpToFile("   dumpX19_%d.tree");
 	statementsNode.foldPaired();
 	if (controlList == null || targetList == null) {
@@ -773,7 +772,7 @@ public class FortranProcessor {
 
     static private boolean addVarAttributeToDo(RegexNode node, String vname, String... nodes) {
 	boolean changed=false;
-	if (node.hideAll( "xdoNode", "(?m)(?i)(<Do>)","X",nodes) ) {
+	if (node.hideAny( "xdoNode", "(?m)(?i)(<Do>)","X",nodes) ) {
 	    if (debug)System.out.format("   xdoNode:%s\n",node.replaceAnchors(node.getText()));
 	    // split up newSkip into new If-blocks around code we need to skip
 	    RegexNode xdoNode=node.getNode("xdoNode");
@@ -794,9 +793,9 @@ public class FortranProcessor {
     static private boolean addNewIfBlock(RegexNode node, String vname, String... nodes) {
 	boolean changed=false;
 	// make sure wi omit ordinary exposed statements 
-	if (node.hideAll( "xnewIfBlock", "(?m)(?i)([^<Fold><Passive><If><Else><Elseif><Endif><Do><Enddo>][^<Fold><If><Else><Elseif><Endif><Do><Enddo>]*)",
+	if (node.hideAny( "xnewIfBlock", "(?m)(?i)([^<Fold><Passive><If><Else><Elseif><Endif><Do><Enddo>][^<Fold><If><Else><Elseif><Endif><Do><Enddo>]*)",
 			       "<If>",nodes)  ||
-	    node.hideAll( "xnewIfBlock", "(?m)(?i)([^<Fold><If><Else><Elseif><Endif><Do><Enddo>]*[^<Fold><Passive><If><Else><Elseif><Endif><Do><Enddo>])",
+	    node.hideAny( "xnewIfBlock", "(?m)(?i)([^<Fold><If><Else><Elseif><Endif><Do><Enddo>]*[^<Fold><Passive><If><Else><Elseif><Endif><Do><Enddo>])",
 			       "<If>",nodes)) {
 	    // make sure we do not nest simple if-blocks
 	    RegexNode xnewIfBlockNode=node.getNode("xnewIfBlock");
@@ -843,7 +842,7 @@ public class FortranProcessor {
 	// newIfBlock: delay all if-block creation, maintain attribute for later use
 	boolean changed=true;
 	if (codeNode.isunfolded()) {
-	    throw new IllegalStateException(String.format("Invalid attempt to create if-block: %s.",codeNode.getIdentification()));
+	    throw new IllegalStateException(String.format("Invalid attempt to create if-block: %s %s.",codeNode.getIdentification(),codeNode.getNodeName()));
 	}
 	//if(debug)System.out.format(">>>>>>>> Making delayedIfBlock: %s %s\n",codeNode.getIdentification(),codeNode.getNodeName());
 	codeNode.setNodeName("delayedIfBlock");
@@ -1030,7 +1029,7 @@ public class FortranProcessor {
 	System.out.format("   Making Do\n");
 	RegexNode newDoNode;
 	boolean bex=(expressionNode != null);
-	if (debug & ! bex) System.out.format("No expression in newDo-node:%s\n",codeNode.getIdentification());
+	if (debug & ! bex) System.out.format("No expression in newDo-node:%s %s\n",codeNode.getIdentification(),codeNode.getNodeName());
 	if (bex) bex=(expressionNode.countChildren() > 0);
 	if (! bex) {
 	    newDoNode=new 
@@ -1886,8 +1885,8 @@ public class FortranProcessor {
 	resetNodeFoldForSeek(statementsNode,sNode);
 	resetNodeFoldForSeek(statementsNode,eNode);
 	statementsNode.markLabelAll(sNode,"¤","#",-2,"$","Statements","...");
-	statementsNode.markLabelAll(eNode,"@","#",-2,"$","Statements","...");
-	if (statementsNode.hideAll( "preCode", "(?m)(?i)¤.#(.*)@.#","-","$","Statements")) {
+	statementsNode.markLabelAll(eNode,"@","~",-2,"$","Statements","...");
+	if (statementsNode.hideAny( "preCode", "(?m)(?i)¤.#(.*)@.~","-","$","Statements")) {
 	    if (statementsNode.hideNodeGroup("newSkip","-",1,"preCode")) {
 		String label=getLastEnddoLabel(statementsNode,"preCode","newSkip");
 		if (label != null) {
@@ -1903,7 +1902,7 @@ public class FortranProcessor {
     }
     static private String getLastEnddoLabel(RegexNode node,String... nodes) {
 	String label=null;
-	if (node.hideAll( "cycleIfSkip", "(?m)(?i)(<Enddo>)([^<Enddo>]*)$",
+	if (node.hideAny( "cycleIfSkip", "(?m)(?i)(<Enddo>)([^<Enddo>]*)$",
 			       "<Block>",nodes)) {
 	    node.hideNodeGroup("lastEndDo","-",1,"cycleIfSkip");  // "preCode/newSkip/cyleIfSkip/lastEndDo" created
 	    node.hideNodeGroup("newSkip","-",2,"cycleIfSkip");    // "preCode/newSkip/cyleIfSkip/newSkip" created
